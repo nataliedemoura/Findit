@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FINDIT.UMB - Sign Out Item</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>FINDIT.UMB</h1>
+            <nav>
+                <button onclick="window.location.href='dashboard.html'">Back to Dashboard</button>
+            </nav>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        <div class="upload-container">
+            <div class="upload-card">
+                <h2 class="section-title">Sign Out Lost Item</h2>
+                <p style="color: #6b7280; margin-bottom: 2rem;">Select the item being claimed:</p>
+                <div id="claimItemsList" class="claim-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Claim Verification Modal -->
+    <div id="claimModal" class="modal-overlay hidden" onclick="closeClaimModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2 class="modal-title">Verify Ownership</h2>
+            
+            <div class="form-group">
+                <label class="form-label">First Name</label>
+                <input type="text" id="claimFirstName" class="form-input" placeholder="Enter first name" />
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Last Name</label>
+                <input type="text" id="claimLastName" class="form-input" placeholder="Enter last name" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Select ID Type</label>
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="idType" value="license" checked onchange="switchIdType()" />
+                        Driver's License / State ID
+                    </label>
+                    <label>
+                        <input type="radio" name="idType" value="student" onchange="switchIdType()" />
+                        Student ID
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" id="idLabel">Driver's License / State ID Number</label>
+                <input 
+                    type="text" 
+                    id="claimIdNumber" 
+                    class="form-input" 
+                    placeholder="Enter ID number" 
+                    oninput="validateIdNumber()"
+                />
+                <p id="idValidationMessage" style="display: none; color: #dc2626; font-size: 0.875rem; margin-top: 0.5rem;">
+                    Invalid ID number
+                </p>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Digital Signature</label>
+                <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.5rem;">
+                    Sign below to claim this item
+                </p>
+                <canvas id="signaturePad" class="signature-pad" width="400" height="200"></canvas>
+                <button class="link-btn" onclick="clearSignature()" style="margin-top: 0.5rem;">
+                    Clear Signature
+                </button>
+            </div>
+
+            <div class="button-group">
+                <button class="secondary-btn" onclick="closeClaimModal()">Cancel</button>
+                <button class="submit-btn" onclick="processClaim()">Claim Item</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script src="data.js"></script>
+    <script src="claim.js"></script>
+</body>
+</html>

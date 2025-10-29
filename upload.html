@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FINDIT.UMB - Upload Item</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>FINDIT.UMB</h1>
+            <nav>
+                <button onclick="window.location.href='dashboard.html'">Back to Dashboard</button>
+            </nav>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        <div class="upload-container">
+            <div class="upload-card">
+                <h2 class="section-title">Upload Found Item</h2>
+
+                <div class="form-group">
+                    <label class="form-label">Item Photo</label>
+                    <div class="file-upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="handleFileSelect(event)" />
+                        <svg class="upload-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" x2="12" y1="3" y2="15"></line>
+                        </svg>
+                        <p style="color: #6b7280; margin-bottom: 0.5rem;">Click to upload or drag and drop</p>
+                        <p style="color: #9ca3af; font-size: 0.875rem;">Take a photo or upload from files</p>
+                    </div>
+                    <img id="imagePreview" class="image-preview hidden" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select id="uploadCategory" class="form-select">
+                        <option value="">Select a category</option>
+                        <option value="Electronics">Electronics</option>
+                        <option value="Keys">Keys</option>
+                        <option value="Wallets/IDs">Wallets/IDs</option>
+                        <option value="Clothing">Clothing</option>
+                        <option value="Books">Books</option>
+                        <option value="Bags">Bags</option>
+                        <option value="Jewelry">Jewelry</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Item Title</label>
+                    <input type="text" id="uploadTitle" class="form-input" placeholder="e.g., Blue backpack, iPhone 13" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="uploadDescription" class="form-textarea" rows="4" placeholder="Detailed description including color, brand, distinctive features..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Location Found</label>
+                    <select id="uploadLocation" class="form-select">
+                        <option value="">Select location</option>
+                        <option value="Campus Center">Campus Center</option>
+                        <option value="Healey Library">Healey Library</option>
+                        <option value="Wheatley Hall">Wheatley Hall</option>
+                        <option value="McCormack Hall">McCormack Hall</option>
+                        <option value="Science Building">Science Building</option>
+                        <option value="University Hall">University Hall</option>
+                        <option value="Quinn Administration">Quinn Administration</option>
+                        <option value="Parking Garage">Parking Garage</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Date Found</label>
+                    <input type="date" id="uploadDate" class="form-input" />
+                </div>
+
+                <button class="submit-btn" onclick="submitUpload()">Post Item</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script src="data.js"></script>
+    <script src="upload.js"></script>
+</body>
+</html>

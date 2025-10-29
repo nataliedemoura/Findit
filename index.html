@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FINDIT.UMB - Home</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/umd/lucide.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>FINDIT.UMB</h1>
+            <nav>
+                <button onclick="window.location.href='index.html'">Home</button>
+                <button onclick="window.location.href='login.html'">Staff Login</button>
+                <button onclick="window.location.href='contact.html'">Contact Us</button>
+                <button onclick="window.location.href='pickup.html'">Pick Up Info</button>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <h2>Your Most Reliable Lost and Found Partner</h2>
+        <p>Here at FINDIT.UMB, we offer the best service.</p>
+        
+        <div class="search-container">
+            <div class="search-box">
+                <svg class="search-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="Search by description, category, or location..."
+                    oninput="filterItems()"
+                />
+            </div>
+            <p class="search-hint">Try searching: iPhone, keys, Campus Center, etc.</p>
+        </div>
+    </section>
+
+    <section class="main-content">
+        <h3 class="section-title">Recent Items (<span id="itemCount">0</span>)</h3>
+        <div id="itemsContainer" class="items-grid"></div>
+    </section>
+
+    <footer>
+        <p>&copy; 2025 FINDIT.UMB. Jobs well done.</p>
+    </footer>
+
+    <script src="firebase-config.js"></script>
+    <script src="data.js"></script>
+    <script src="home.js"></script>
+</body>
+</html>
