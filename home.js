@@ -3,6 +3,8 @@ function displayItems(itemsToDisplay) {
     const container = document.getElementById('itemsContainer');
     const itemCount = document.getElementById('itemCount');
     
+    if (!container || !itemCount) return;
+    
     itemCount.textContent = itemsToDisplay.length;
     
     if (itemsToDisplay.length === 0) {
@@ -34,7 +36,7 @@ function displayItems(itemsToDisplay) {
             <div class="item-details">
                 <div class="detail-row">
                     <svg class="detail-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+                        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0 Z"></path>
                         <circle cx="12" cy="10" r="3"></circle>
                     </svg>
                     <span>${item.location}</span>
@@ -73,6 +75,7 @@ function filterItems() {
 }
 
 // Initialize home page
-window.onload = function() {
+window.onload = async function() {
+    await loadItemsFromFirestore();
     displayItems(items);
 };

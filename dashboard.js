@@ -1,27 +1,16 @@
-// Check if user is logged in
-function checkAuth() {
-    const currentUser = sessionStorage.getItem('currentUser');
-    
-    if (!currentUser) {
-        // Redirect to login if not authenticated
-        window.location.href = 'login.html';
-        return null;
-    }
-    
-    return JSON.parse(currentUser);
-}
-
 // Handle logout
-function handleLogout() {
-    sessionStorage.removeItem('currentUser');
-    window.location.href = 'index.html';
+async function handleLogout() {
+    try {
+        await auth.signOut();
+        currentUser = null;
+        window.location.href = 'index.html';
+    } catch (error) {
+        console.error('Logout error:', error);
+        alert('Logout failed: ' + error.message);
+    }
 }
 
 // Initialize dashboard
-window.onload = function() {
-    const user = checkAuth();
-    
-    if (user) {
-        document.getElementById('userName').textContent = user.name;
-    }
+window.onload = async function() {
+    await checkAuth();
 };

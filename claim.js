@@ -3,21 +3,11 @@ let isDrawing = false;
 let signatureCanvas = null;
 let signatureContext = null;
 
-// Check if user is logged in
-function checkAuth() {
-    const currentUser = sessionStorage.getItem('currentUser');
-    
-    if (!currentUser) {
-        window.location.href = 'login.html';
-        return null;
-    }
-    
-    return JSON.parse(currentUser);
-}
-
 // Display claim list
 function displayClaimList() {
     const container = document.getElementById('claimItemsList');
+    
+    if (!container) return;
     
     if (items.length === 0) {
         container.innerHTML = '<p style="text-align: center; color: #6b7280;">No items available to claim</p>';
@@ -25,7 +15,7 @@ function displayClaimList() {
     }
 
     container.innerHTML = items.map(item => `
-        <div class="claim-item" onclick="selectClaimItem(${item.id})">
+        <div class="claim-item" onclick="selectClaimItem('${item.id}')">
             ${item.image ? `<img src="${item.image}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 0.5rem; margin-bottom: 0.5rem;">` : ''}
             <h4 style="font-weight: 600; margin-bottom: 0.25rem;">${item.title}</h4>
             <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">${item.category} - ${item.location}</p>
@@ -118,15 +108,17 @@ function switchIdType() {
     }
 }
 
-// Validate ID number (basic validation)
+// Validate ID number
 function validateIdNumber() {
     const idNumber = document.getElementById('claimIdNumber').value;
     const validationMessage = document.getElementById('idValidationMessage');
     
-    if (idNumber.length > 0 && idNumber.length < 5) {
-        validationMessage.style.display = 'block';
-    } else {
-        validationMessage.style.display = 'none';
+    if (validationMessage) {
+        if (idNumber.length > 0 && idNumber.length < 5) {
+            validationMessage.style.display = 'block';
+        } else {
+            validationMessage.style.display = 'none';
+        }
     }
 }
 
@@ -134,15 +126,20 @@ function validateIdNumber() {
 function closeClaimModal(event) {
     if (!event || event.target === document.getElementById('claimModal')) {
         document.getElementById('claimModal').classList.add('hidden');
-        document.getElementById('claimFirstName').value = '';
-        document.getElementById('claimLastName').value = '';
-        document.getElementById('claimIdNumber').value = '';
+        const firstName = document.getElementById('claimFirstName');
+        const lastName = document.getElementById('claimLastName');
+        const idNumber = document.getElementById('claimIdNumber');
+        
+        if (firstName) firstName.value = '';
+        if (lastName) lastName.value = '';
+        if (idNumber) idNumber.value = '';
+        
         selectedClaimItem = null;
     }
 }
 
-// Process claim
-function processClaim() {
+// Process claim with Firestore
+async function processClaim() {
     const firstName = document.getElementById('claimFirstName').value;
     const lastName = document.getElementById('claimLastName').value;
     const idNumber = document.getElementById('claimIdNumber').value;
@@ -166,22 +163,42 @@ function processClaim() {
         return;
     }
 
-    // Remove item from list
-    items = items.filter(item => item.id !== selectedClaimItem.id);
-    saveItems();
-    
-    alert(`Item claimed successfully!\n\nItem: ${selectedClaimItem.title}\nClaimed by: ${firstName} ${lastName}\nID: ${idNumber}`);
-    
-    document.getElementById('claimModal').classList.add('hidden');
-    document.getElementById('claimFirstName').value = '';
-    document.getElementById('claimLastName').value = '';
-    document.getElementById('claimIdNumber').value = '';
-    
-    displayClaimList();
+    try {
+        // Save claim record to Firestore
+        await db.collection('claims').add({
+            itemId: selectedClaimItem.id,
+            itemTitle: selectedClaimItem.title,
+            claimedBy: currentUser ? currentUser.uid : 'anonymous',
+            claimerEmail: currentUser ? currentUser.email : 'unknown',
+            firstName: firstName,
+            lastName: lastName,
+            idNumber: idNumber,
+            claimedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            signature: signatureCanvas.toDataURL()
+        });
+
+        // Delete item from Firestore
+        await db.collection('items').doc(selectedClaimItem.id).delete();
+        
+        alert(`Item claimed successfully!\n\nItem: ${selectedClaimItem.title}\nClaimed by: ${firstName} ${lastName}\nID: ${idNumber}`);
+        
+        document.getElementById('claimModal').classList.add('hidden');
+        document.getElementById('claimFirstName').value = '';
+        document.getElementById('claimLastName').value = '';
+        document.getElementById('claimIdNumber').value = '';
+        
+        // Reload items
+        await loadItemsFromFirestore();
+        displayClaimList();
+    } catch (error) {
+        console.error('Error claiming item:', error);
+        alert('Failed to process claim: ' + error.message);
+    }
 }
 
 // Initialize claim page
-window.onload = function() {
-    checkAuth();
+window.onload = async function() {
+    await checkAuth();
+    await loadItemsFromFirestore();
     displayClaimList();
 };

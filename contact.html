@@ -4,7 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FINDIT.UMB - Contact Us</title>
+
     <link rel="stylesheet" href="styles.css">
+
+    <!-- Icons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/umd/lucide.min.js"></script>
+
+    <!-- ✅ Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 </head>
 <body>
     <header>
@@ -30,7 +40,7 @@
                 </svg>
                 <div>
                     <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 0.25rem;">Email</h3>
-                    <p style="color: #4b5563;">findit@umb.edu</p>
+                    <p style="color: #4b5563;">finditsolutions1@gmail.com</p>
                 </div>
             </div>
 
@@ -41,6 +51,28 @@
                 <div>
                     <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 0.25rem;">Phone</h3>
                     <p style="color: #4b5563;">(617) 287-5000</p>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1e3a8a" stroke-width="2" style="margin-top: 0.25rem;">
+                    <rect width="20" height="16" x="2" y="4" rx="2"></rect>
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                </svg>
+                <div>
+                    <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 0.25rem;">Instagram</h3>
+                    <p style="color: #4b5563;">finditsolutions1</p>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1e3a8a" stroke-width="2" style="margin-top: 0.25rem;">
+                    <rect width="20" height="16" x="2" y="4" rx="2"></rect>
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                </svg>
+                <div>
+                    <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 0.25rem;">X</h3>
+                    <p style="color: #4b5563;">finditsolutions1</p>
                 </div>
             </div>
 
@@ -55,11 +87,18 @@
                     <p style="color: #4b5563;">100 Morrissey Blvd, Boston, MA 02125</p>
                 </div>
             </div>
+            
+            </div>
         </div>
     </div>
 
     <footer>
         <p>&copy; 2025 FINDIT.UMB. Jobs well done.</p>
     </footer>
+
+    <script src="firebase-config.js"></script>
+    <script src="data.js"></script>
+    <script src="auth.js"></script>
+    
 </body>
 </html>

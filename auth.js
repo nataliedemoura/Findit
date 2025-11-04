@@ -10,8 +10,8 @@ function showSignup() {
     document.getElementById('signupForm').classList.remove('hidden');
 }
 
-// Handle login
-function handleLogin() {
+// Handle login with Firebase Auth
+async function handleLogin() {
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
 
@@ -20,11 +20,15 @@ function handleLogin() {
         return;
     }
 
-    const user = users.find(u => u.email === email && u.password === password);
-    
-    if (user) {
-        // Store current user in sessionStorage
-        sessionStorage.setItem('currentUser', JSON.stringify(user));
+    try {
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        currentUser = userCredential.user;
+        
+        // Load user profile from Firestore
+        const userDoc = await db.collection('users').doc(currentUser.uid).get();
+        if (userDoc.exists) {
+            console.log('User profile loaded:', userDoc.data().name);
+        }
         
         // Clear form
         document.getElementById('loginEmail').value = '';
@@ -32,13 +36,14 @@ function handleLogin() {
         
         // Redirect to dashboard
         window.location.href = 'dashboard.html';
-    } else {
-        alert('Invalid credentials. Try email: admin@umb.edu, password: admin123');
+    } catch (error) {
+        console.error('Login error:', error);
+        alert('Invalid credentials: ' + error.message);
     }
 }
 
-// Handle signup
-function handleSignup() {
+// Handle signup with Firebase Auth
+async function handleSignup() {
     const name = document.getElementById('signupName').value;
     const email = document.getElementById('signupEmail').value;
     const password = document.getElementById('signupPassword').value;
@@ -49,21 +54,28 @@ function handleSignup() {
         return;
     }
 
-    if (users.find(u => u.email === email)) {
-        alert('User with this email already exists');
-        return;
+    try {
+        // Create Firebase Auth user
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        
+        // Store additional user data in Firestore
+        await db.collection('users').doc(userCredential.user.uid).set({
+            name: name,
+            email: email,
+            staffId: staffId,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        alert('Account created successfully! Please login.');
+        showLogin();
+        
+        // Clear form
+        document.getElementById('signupName').value = '';
+        document.getElementById('signupEmail').value = '';
+        document.getElementById('signupPassword').value = '';
+        document.getElementById('signupStaffId').value = '';
+    } catch (error) {
+        console.error('Signup error:', error);
+        alert('Signup failed: ' + error.message);
     }
-
-    const newUser = { name, email, password, staffId };
-    users.push(newUser);
-    saveUsers();
-    
-    alert('Account created successfully! Please login.');
-    showLogin();
-    
-    // Clear form
-    document.getElementById('signupName').value = '';
-    document.getElementById('signupEmail').value = '';
-    document.getElementById('signupPassword').value = '';
-    document.getElementById('signupStaffId').value = '';
 }

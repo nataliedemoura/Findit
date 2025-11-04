@@ -1,27 +1,80 @@
     <script>
+
+   // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDSeMIZ3OBwArgmZHYWpthMoY2gHlx4j2U",
+  authDomain: "it-capstone-e5fd1.firebaseapp.com",
+  projectId: "it-capstone-e5fd1",
+  storageBucket: "it-capstone-e5fd1.firebasestorage.app",
+  messagingSenderId: "1008409958623",
+  appId: "1:1008409958623:web:8ca6af3c63b56e0185b16a",
+  measurementId: "G-BYHJVS9RRZ"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
+// ✅ Make Firestore, Auth, and Storage available globally
+        window.db = firebase.firestore();
+        window.auth = firebase.auth();
+        window.storage = firebase.storage();
+
         // Data storage
-        let items = [
-            {
-                id: 1,
-                type: 'found',
-                category: 'Electronics',
-                title: 'iPhone 13 Pro',
-                description: 'Black iPhone 13 Pro with cracked screen protector',
-                location: 'Campus Center',
-                date: '2025-10-10',
-                image: null
-            },
-            {
-                id: 2,
-                type: 'found',
-                category: 'Keys',
-                title: 'Set of keys with blue keychain',
-                description: 'Found a set of keys with a blue UMass Boston keychain attached',
-                location: 'Healey Library',
-                date: '2025-10-12',
-                image: null
+       // NEW - Load from Firestore
+let items = [];
+
+window.onload = async function() {
+    showPage('home');
+    await loadItemsFromFirestore();
+    displayItems(items);
+};
+
+// Listen for authentication state changes
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        currentUser = user;
+        console.log('User logged in:', user.email);
+        
+        // Load user profile from Firestore
+        try {
+            const userDoc = await db.collection('users').doc(user.uid).get();
+            if (userDoc.exists) {
+                document.getElementById('userName').textContent = userDoc.data().name;
             }
-        ];
+        } catch (error) {
+            console.error('Error loading user profile:', error);
+        }
+    } else {
+        currentUser = null;
+        console.log('User logged out');
+    }
+});
+
+async function loadItemsFromFirestore() {
+    try {
+        const snapshot = await db.collection('items').orderBy('date', 'desc').get();
+        items = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+    } catch (error) {
+        console.error('Error loading items:', error);
+        alert('Failed to load items from database');
+    }
+}
+
+        window.onload = function() {
+    showPage('home');
+    displayItems(items);
+};
 
         let users = [
             {
@@ -72,61 +125,83 @@
             document.getElementById('signupForm').classList.remove('hidden');
         }
 
-        function handleLogin() {
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
+        async function handleLogin() {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
 
-            if (!email || !password) {
-                alert('Please enter email and password');
-                return;
-            }
+    if (!email || !password) {
+        alert('Please enter email and password');
+        return;
+    }
 
-            const user = users.find(u => u.email === email && u.password === password);
-            
-            if (user) {
-                currentUser = user;
-                document.getElementById('userName').textContent = user.name;
-                showPage('dashboard');
-                document.getElementById('loginEmail').value = '';
-                document.getElementById('loginPassword').value = '';
-            } else {
-                alert('Invalid credentials. Try email: admin@umb.edu, password: admin123');
-            }
+    try {
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        currentUser = userCredential.user;
+        
+        // Load user profile from Firestore
+        const userDoc = await db.collection('users').doc(currentUser.uid).get();
+        if (userDoc.exists) {
+            document.getElementById('userName').textContent = userDoc.data().name;
+        } else {
+            document.getElementById('userName').textContent = email.split('@')[0];
         }
+        
+        showPage('dashboard');
+        document.getElementById('loginEmail').value = '';
+        document.getElementById('loginPassword').value = '';
+    } catch (error) {
+        console.error('Login error:', error);
+        alert('Invalid credentials: ' + error.message);
+    }
+}
 
-        function handleSignup() {
-            const name = document.getElementById('signupName').value;
-            const email = document.getElementById('signupEmail').value;
-            const password = document.getElementById('signupPassword').value;
-            const staffId = document.getElementById('signupStaffId').value;
+async function handleSignup() {
+    const name = document.getElementById('signupName').value;
+    const email = document.getElementById('signupEmail').value;
+    const password = document.getElementById('signupPassword').value;
+    const staffId = document.getElementById('signupStaffId').value;
 
-            if (!name || !email || !password || !staffId) {
-                alert('Please fill in all fields');
-                return;
-            }
+    if (!name || !email || !password || !staffId) {
+        alert('Please fill in all fields');
+        return;
+    }
 
-            if (users.find(u => u.email === email)) {
-                alert('User with this email already exists');
-                return;
-            }
+    try {
+        // Create Firebase Auth user
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        
+        // Store additional user data in Firestore
+        await db.collection('users').doc(userCredential.user.uid).set({
+            name: name,
+            email: email,
+            staffId: staffId,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        alert('Account created successfully! Please login.');
+        showLogin();
+        
+        // Clear form
+        document.getElementById('signupName').value = '';
+        document.getElementById('signupEmail').value = '';
+        document.getElementById('signupPassword').value = '';
+        document.getElementById('signupStaffId').value = '';
+    } catch (error) {
+        console.error('Signup error:', error);
+        alert('Signup failed: ' + error.message);
+    }
+}
 
-            const newUser = { name, email, password, staffId };
-            users.push(newUser);
-            
-            alert('Account created successfully! Please login.');
-            showLogin();
-            
-            document.getElementById('signupName').value = '';
-            document.getElementById('signupEmail').value = '';
-            document.getElementById('signupPassword').value = '';
-            document.getElementById('signupStaffId').value = '';
-        }
-
-        function handleLogout() {
-            currentUser = null;
-            showPage('home');
-        }
-
+async function handleLogout() {
+    try {
+        await auth.signOut();
+        currentUser = null;
+        showPage('home');
+    } catch (error) {
+        console.error('Logout error:', error);
+        alert('Logout failed: ' + error.message);
+    }
+}
         // Display items
         function displayItems(itemsToDisplay) {
             const container = document.getElementById('itemsContainer');
@@ -247,44 +322,54 @@
             });
         }
 
-        function submitUpload() {
-            const category = document.getElementById('uploadCategory').value;
-            const title = document.getElementById('uploadTitle').value;
-            const description = document.getElementById('uploadDescription').value;
-            const location = document.getElementById('uploadLocation').value;
-            const date = document.getElementById('uploadDate').value;
+        async function submitUpload() {
+    const category = document.getElementById('uploadCategory').value;
+    const title = document.getElementById('uploadTitle').value;
+    const description = document.getElementById('uploadDescription').value;
+    const location = document.getElementById('uploadLocation').value;
+    const date = document.getElementById('uploadDate').value;
 
-            if (!category || !title || !description || !location || !date) {
-                alert('Please fill in all fields');
-                return;
-            }
+    if (!category || !title || !description || !location || !date) {
+        alert('Please fill in all fields');
+        return;
+    }
 
-            const newItem = {
-                id: Date.now(),
-                type: 'found',
-                category,
-                title,
-                description,
-                location,
-                date,
-                image: uploadedImage
-            };
+    const newItem = {
+        type: 'found',
+        category,
+        title,
+        description,
+        location,
+        date,
+        image: uploadedImage,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
 
-            items.unshift(newItem);
-            
-            alert('Item posted successfully!');
-            
-            // Clear form
-            document.getElementById('uploadCategory').value = '';
-            document.getElementById('uploadTitle').value = '';
-            document.getElementById('uploadDescription').value = '';
-            document.getElementById('uploadLocation').value = '';
-            document.getElementById('uploadDate').value = '';
-            document.getElementById('imagePreview').classList.add('hidden');
-            uploadedImage = null;
-            
-            showPage('dashboard');
-        }
+    try {
+        // Save to Firestore
+        await db.collection('items').add(newItem);
+        
+        alert('Item posted successfully!');
+        
+        // Reload items from Firestore
+        await loadItemsFromFirestore();
+        displayItems(items);
+        
+        // Clear form
+        document.getElementById('uploadCategory').value = '';
+        document.getElementById('uploadTitle').value = '';
+        document.getElementById('uploadDescription').value = '';
+        document.getElementById('uploadLocation').value = '';
+        document.getElementById('uploadDate').value = '';
+        document.getElementById('imagePreview').classList.add('hidden');
+        uploadedImage = null;
+        
+        showPage('dashboard');
+    } catch (error) {
+        console.error('Error saving item:', error);
+        alert('Failed to save item');
+    }
+}
 
         // Claim functionality
         function showClaimList() {
@@ -388,31 +473,37 @@
             }
         }
 
-        function processClaim() {
-            const idNumber = document.getElementById('claimIdNumber').value;
-            
-            if (!idNumber) {
-                alert('Please enter your ID number');
-                return;
-            }
+        async function processClaim() {
+    const idNumber = document.getElementById('claimIdNumber').value;
+    
+    if (!idNumber) {
+        alert('Please enter your ID number');
+        return;
+    }
 
-            // Check if signature is drawn
-            const imageData = signatureContext.getImageData(0, 0, signatureCanvas.width, signatureCanvas.height);
-            const hasSignature = imageData.data.some(channel => channel !== 0);
-            
-            if (!hasSignature) {
-                alert('Please provide your digital signature');
-                return;
-            }
+    const imageData = signatureContext.getImageData(0, 0, signatureCanvas.width, signatureCanvas.height);
+    const hasSignature = imageData.data.some(channel => channel !== 0);
+    
+    if (!hasSignature) {
+        alert('Please provide your digital signature');
+        return;
+    }
 
-            // Remove item from list
-            items = items.filter(item => item.id !== selectedClaimItem.id);
-            
-            alert(`Item claimed successfully!\n\nItem: ${selectedClaimItem.title}\nID: ${idNumber}`);
-            
-            document.getElementById('claimModal').classList.add('hidden');
-            document.getElementById('claimIdNumber').value = '';
-            
-            displayClaimList();
-        }
+    try {
+        // Delete from Firestore
+        await db.collection('items').doc(selectedClaimItem.id).delete();
+        
+        alert(`Item claimed successfully!\n\nItem: ${selectedClaimItem.title}\nID: ${idNumber}`);
+        
+        document.getElementById('claimModal').classList.add('hidden');
+        document.getElementById('claimIdNumber').value = '';
+        
+        // Reload items
+        await loadItemsFromFirestore();
+        displayClaimList();
+    } catch (error) {
+        console.error('Error claiming item:', error);
+        alert('Failed to process claim');
+    }
+}
     </script>

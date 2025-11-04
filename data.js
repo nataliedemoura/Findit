@@ -1,62 +1,56 @@
-// Sample data storage (in a production app, this would be in Firebase)
-let items = [
-    {
-        id: 1,
-        type: 'found',
-        category: 'Electronics',
-        title: 'iPhone 13 Pro',
-        description: 'Black iPhone 13 Pro with cracked screen protector',
-        location: 'Campus Center',
-        date: '2025-10-10',
-        image: null
-    },
-    {
-        id: 2,
-        type: 'found',
-        category: 'Keys',
-        title: 'Set of keys with blue keychain',
-        description: 'Found a set of keys with a blue UMass Boston keychain attached',
-        location: 'Healey Library',
-        date: '2025-10-12',
-        image: null
-    }
-];
+// Global data
+let items = [];
+let currentUser = null;
 
-let users = [
-    {
-        name: 'Admin User',
-        email: 'admin@umb.edu',
-        password: 'admin123',
-        staffId: 'STAFF001'
-    }
-];
-
-// Get items from localStorage if available
-function loadItems() {
-    const storedItems = localStorage.getItem('findit_items');
-    if (storedItems) {
-        items = JSON.parse(storedItems);
+// Load items from Firestore
+async function loadItemsFromFirestore() {
+    try {
+        const snapshot = await db.collection('items').orderBy('date', 'desc').get();
+        items = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        console.log('Loaded items:', items.length);
+        return items;
+    } catch (error) {
+        console.error('Error loading items:', error);
+        alert('Failed to load items from database: ' + error.message);
+        return [];
     }
 }
 
-// Save items to localStorage
-function saveItems() {
-    localStorage.setItem('findit_items', JSON.stringify(items));
-}
-
-// Get users from localStorage if available
-function loadUsers() {
-    const storedUsers = localStorage.getItem('findit_users');
-    if (storedUsers) {
-        users = JSON.parse(storedUsers);
+// Listen for authentication state changes
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        currentUser = user;
+        console.log('User logged in:', user.email);
+        
+        // Load user profile from Firestore
+        try {
+            const userDoc = await db.collection('users').doc(user.uid).get();
+            if (userDoc.exists && document.getElementById('userName')) {
+                document.getElementById('userName').textContent = userDoc.data().name;
+            }
+        } catch (error) {
+            console.error('Error loading user profile:', error);
+        }
+    } else {
+        currentUser = null;
+        console.log('User logged out');
     }
-}
+});
 
-// Save users to localStorage
-function saveUsers() {
-    localStorage.setItem('findit_users', JSON.stringify(users));
+// Check if user is authenticated (for protected pages)
+function checkAuth() {
+    return new Promise((resolve) => {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+            unsubscribe();
+            if (!user) {
+                window.location.href = 'login.html';
+                resolve(null);
+            } else {
+                resolve(user);
+            }
+        });
+    });
 }
-
-// Initialize data
-loadItems();
-loadUsers();

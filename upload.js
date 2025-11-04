@@ -1,17 +1,5 @@
 let uploadedImage = null;
 
-// Check if user is logged in
-function checkAuth() {
-    const currentUser = sessionStorage.getItem('currentUser');
-    
-    if (!currentUser) {
-        window.location.href = 'login.html';
-        return null;
-    }
-    
-    return JSON.parse(currentUser);
-}
-
 // Handle file selection
 function handleFileSelect(event) {
     const file = event.target.files[0];
@@ -58,8 +46,8 @@ function setupDragAndDrop() {
     }
 }
 
-// Submit upload
-function submitUpload() {
+// Submit upload to Firestore
+async function submitUpload() {
     const category = document.getElementById('uploadCategory').value;
     const title = document.getElementById('uploadTitle').value;
     const description = document.getElementById('uploadDescription').value;
@@ -71,37 +59,56 @@ function submitUpload() {
         return;
     }
 
-    const newItem = {
-        id: Date.now(),
-        type: 'found',
-        category,
-        title,
-        description,
-        location,
-        date,
-        image: uploadedImage
-    };
+    let imageUrl = null;
 
-    items.unshift(newItem);
-    saveItems();
-    
-    alert('Item posted successfully!');
-    
-    // Clear form
-    document.getElementById('uploadCategory').value = '';
-    document.getElementById('uploadTitle').value = '';
-    document.getElementById('uploadDescription').value = '';
-    document.getElementById('uploadLocation').value = '';
-    document.getElementById('uploadDate').value = '';
-    document.getElementById('imagePreview').classList.add('hidden');
-    uploadedImage = null;
-    
-    // Redirect to dashboard
-    window.location.href = 'dashboard.html';
+    try {
+        // Upload image to Firebase Storage if present
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+            const imageFile = fileInput.files[0];
+            const storageRef = storage.ref(`items/${Date.now()}_${imageFile.name}`);
+            const snapshot = await storageRef.put(imageFile);
+            imageUrl = await snapshot.ref.getDownloadURL();
+            console.log('Image uploaded:', imageUrl);
+        }
+
+        const newItem = {
+            type: 'found',
+            category,
+            title,
+            description,
+            location,
+            date,
+            image: imageUrl,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            uploadedBy: currentUser ? currentUser.uid : 'anonymous'
+        };
+
+        // Save to Firestore
+        await db.collection('items').add(newItem);
+        
+        alert('Item posted successfully!');
+        
+        // Clear form
+        document.getElementById('uploadCategory').value = '';
+        document.getElementById('uploadTitle').value = '';
+        document.getElementById('uploadDescription').value = '';
+        document.getElementById('uploadLocation').value = '';
+        document.getElementById('uploadDate').value = '';
+        document.getElementById('imagePreview').classList.add('hidden');
+        if (fileInput) fileInput.value = '';
+        uploadedImage = null;
+        
+        // Redirect to dashboard
+        window.location.href = 'dashboard.html';
+    } catch (error) {
+        console.error('Error saving item:', error);
+        alert('Failed to save item: ' + error.message);
+    }
 }
 
 // Initialize upload page
-window.onload = function() {
-    checkAuth();
+window.onload = async function() {
+    await checkAuth();
     setupDragAndDrop();
 };
