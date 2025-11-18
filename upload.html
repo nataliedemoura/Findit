@@ -54,11 +54,14 @@
                         </button>
                     </div>
                     
-                    <!-- Hidden file input -->
+                    <!-- Hidden file input for selecting from files -->
                     <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="handleFileSelect(event)" />
                     
+                    <!-- Hidden native camera input (mobile fallback) -->
+                    <input type="file" id="nativeCameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelect(event)" />
+                    
                     <!-- Image Preview -->
-                    <img id="imagePreview" class="image-preview hidden" />
+                    <img id="imagePreview" class="image-preview hidden" alt="Preview of uploaded item" />
                     
                     <!-- Clear Photo Button -->
                     <button id="clearPhotoBtn" type="button" class="clear-photo-btn hidden" onclick="clearPhoto()">
@@ -128,7 +131,14 @@
             <h2 class="modal-title">Take Photo</h2>
             
             <div class="camera-container">
-                <video id="cameraStream" class="camera-stream" autoplay playsinline></video>
+                <video 
+                    id="cameraStream" 
+                    class="camera-stream" 
+                    autoplay 
+                    playsinline 
+                    muted
+                    webkit-playsinline="true"
+                ></video>
                 <canvas id="photoCanvas" class="photo-canvas hidden"></canvas>
             </div>
             
