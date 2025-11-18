@@ -1,3 +1,5 @@
+let selectedScheduleItem = null;
+
 // Display items on home page
 function displayItems(itemsToDisplay) {
     const container = document.getElementById('itemsContainer');
@@ -64,6 +66,18 @@ function displayItems(itemsToDisplay) {
                     </div>
                 ` : ''}
             </div>
+            
+            ${!item.claimed ? `
+                <button class="schedule-pickup-btn" onclick="openScheduleModal('${item.id}', event)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; vertical-align: middle; margin-right: 0.5rem;">
+                        <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
+                        <line x1="16" x2="16" y1="2" y2="6"></line>
+                        <line x1="8" x2="8" y1="2" y2="6"></line>
+                        <line x1="3" x2="21" y1="10" y2="10"></line>
+                    </svg>
+                    Schedule Pickup
+                </button>
+            ` : ''}
         </div>
     `).join('');
 }
@@ -205,6 +219,149 @@ function clearAllFilters() {
     applyFilters();
 }
 
+// Open schedule pickup modal
+function openScheduleModal(itemId, event) {
+    if (event) {
+        event.stopPropagation();
+    }
+    
+    selectedScheduleItem = items.find(item => item.id === itemId || item.id == itemId);
+    
+    if (!selectedScheduleItem) {
+        console.error('Item not found:', itemId);
+        alert('Error: Could not find selected item');
+        return;
+    }
+    
+    // Display selected item info
+    const itemInfo = document.getElementById('selectedItemInfo');
+    if (itemInfo) {
+        itemInfo.innerHTML = `
+            <div style="background-color: #eff6ff; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                <h4 style="font-weight: 600; margin-bottom: 0.5rem;">Selected Item:</h4>
+                <p style="color: #1e40af; font-weight: 600;">${selectedScheduleItem.title}</p>
+                <p style="color: #6b7280; font-size: 0.875rem;">${selectedScheduleItem.category} - ${selectedScheduleItem.location}</p>
+            </div>
+        `;
+    }
+    
+    // Set minimum date to today
+    const dateInput = document.getElementById('scheduleDate');
+    if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.setAttribute('min', today);
+        dateInput.value = today;
+    }
+    
+    document.getElementById('scheduleModal').classList.remove('hidden');
+}
+
+// Close schedule pickup modal
+function closeScheduleModal(event) {
+    if (!event || event.target === document.getElementById('scheduleModal')) {
+        document.getElementById('scheduleModal').classList.add('hidden');
+        
+        // Clear form
+        document.getElementById('scheduleName').value = '';
+        document.getElementById('scheduleEmail').value = '';
+        document.getElementById('schedulePhone').value = '';
+        document.getElementById('scheduleStudentId').value = '';
+        document.getElementById('scheduleDate').value = '';
+        document.getElementById('scheduleTime').value = '';
+        document.getElementById('scheduleNotes').value = '';
+        
+        selectedScheduleItem = null;
+    }
+}
+
+// Submit schedule pickup request
+async function submitSchedule() {
+    const name = document.getElementById('scheduleName').value.trim();
+    const email = document.getElementById('scheduleEmail').value.trim();
+    const phone = document.getElementById('schedulePhone').value.trim();
+    const studentId = document.getElementById('scheduleStudentId').value.trim();
+    const date = document.getElementById('scheduleDate').value;
+    const time = document.getElementById('scheduleTime').value;
+    const notes = document.getElementById('scheduleNotes').value.trim();
+    
+    // Validation
+    if (!name) {
+        alert('Please enter your full name');
+        return;
+    }
+    
+    if (!email) {
+        alert('Please enter your email address');
+        return;
+    }
+    
+    if (!phone) {
+        alert('Please enter your phone number');
+        return;
+    }
+    
+    if (!studentId) {
+        alert('Please enter your student ID');
+        return;
+    }
+    
+    if (!date) {
+        alert('Please select a pickup date');
+        return;
+    }
+    
+    if (!time) {
+        alert('Please select a pickup time');
+        return;
+    }
+    
+    try {
+        // Save pickup request to Firestore
+        await db.collection('pickupRequests').add({
+            itemId: selectedScheduleItem.id,
+            itemTitle: selectedScheduleItem.title,
+            itemCategory: selectedScheduleItem.category,
+            itemLocation: selectedScheduleItem.location,
+            studentName: name,
+            studentEmail: email,
+            studentPhone: phone,
+            studentId: studentId,
+            pickupDate: date,
+            pickupTime: time,
+            notes: notes,
+            status: 'pending',
+            requestedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        // Send confirmation email using EmailJS
+        emailjs.send('service_zgceqtv', 'template_yet13mh', {
+            student_name: name,
+            student_email: email,
+            item_title: selectedScheduleItem.title,
+            item_category: selectedScheduleItem.category,
+            item_location: selectedScheduleItem.location,
+            pickup_date: date,
+            pickup_time: time,
+            student_id: studentId,
+            to_email: email
+        }).then(
+            function(response) {
+                console.log('Email sent successfully!', response.status, response.text);
+            },
+            function(error) {
+                console.error('Failed to send email:', error);
+            }
+        );
+        
+        alert(`Pickup scheduled successfully!\n\nItem: ${selectedScheduleItem.title}\nDate: ${date}\nTime: ${time}\n\nA confirmation email has been sent to ${email}`);
+        
+        closeScheduleModal();
+    } catch (error) {
+        console.error('Error scheduling pickup:', error);
+        alert('Failed to schedule pickup: ' + error.message);
+    }
+}
+
 // Initialize home page
 window.onload = async function() {
     try {
@@ -213,7 +370,7 @@ window.onload = async function() {
         // Set default availability filter to "available"
         const availabilityFilter = document.getElementById('availabilityFilter');
         if (availabilityFilter) {
-            availabilityFilter.value = 'all';
+            availabilityFilter.value = 'available';
         }
         
         applyFilters();

@@ -1,4 +1,6 @@
 let uploadedImage = null;
+let cameraStream = null;
+let capturedPhotoBlob = null;
 
 // Handle file selection
 function handleFileSelect(event) {
@@ -9,9 +11,21 @@ function handleFileSelect(event) {
             uploadedImage = e.target.result;
             document.getElementById('imagePreview').src = uploadedImage;
             document.getElementById('imagePreview').classList.remove('hidden');
+            document.getElementById('clearPhotoBtn').classList.remove('hidden');
         };
         reader.readAsDataURL(file);
     }
+}
+
+// Clear photo - THIS FUNCTION WAS MISSING!
+function clearPhoto() {
+    uploadedImage = null;
+    capturedPhotoBlob = null; // Clear camera blob too
+    document.getElementById('imagePreview').src = '';
+    document.getElementById('imagePreview').classList.add('hidden');
+    const clearBtn = document.getElementById('clearPhotoBtn');
+    if (clearBtn) clearBtn.classList.add('hidden');
+    document.getElementById('fileInput').value = '';
 }
 
 // Setup drag and drop
@@ -63,13 +77,20 @@ async function submitUpload() {
 
     try {
         // Upload image to Firebase Storage if present
-        const fileInput = document.getElementById('fileInput');
-        if (fileInput && fileInput.files && fileInput.files[0]) {
-            const imageFile = fileInput.files[0];
+        // CHECK CAMERA PHOTO FIRST!
+        if (capturedPhotoBlob) {
+            // Upload captured camera photo (blob)
+            const storageRef = storage.ref(`items/${Date.now()}_camera_photo.jpg`);
+            const snapshot = await storageRef.put(capturedPhotoBlob);
+            imageUrl = await snapshot.ref.getDownloadURL();
+            console.log('Camera photo uploaded:', imageUrl);
+        } else if (document.getElementById('fileInput').files[0]) {
+            // Upload file from file input
+            const imageFile = document.getElementById('fileInput').files[0];
             const storageRef = storage.ref(`items/${Date.now()}_${imageFile.name}`);
             const snapshot = await storageRef.put(imageFile);
             imageUrl = await snapshot.ref.getDownloadURL();
-            console.log('Image uploaded:', imageUrl);
+            console.log('File uploaded:', imageUrl);
         }
 
         const newItem = {
@@ -95,9 +116,7 @@ async function submitUpload() {
         document.getElementById('uploadDescription').value = '';
         document.getElementById('uploadLocation').value = '';
         document.getElementById('uploadDate').value = '';
-        document.getElementById('imagePreview').classList.add('hidden');
-        if (fileInput) fileInput.value = '';
-        uploadedImage = null;
+        clearPhoto();
         
         // Redirect to dashboard
         window.location.href = 'dashboard.html';
@@ -111,4 +130,128 @@ async function submitUpload() {
 window.onload = async function() {
     await checkAuth();
     setupDragAndDrop();
+    
+    // Set today's date as default
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('uploadDate').value = today;
 };
+
+/* ===== CAMERA FUNCTIONS FOR UPLOAD PAGE ===== */
+
+// Open camera modal
+async function openCamera() {
+    const modal = document.getElementById('cameraModal');
+    const video = document.getElementById('cameraStream');
+    const canvas = document.getElementById('photoCanvas');
+    const captureBtn = document.getElementById('captureBtn');
+    const retakeBtn = document.getElementById('retakeBtn');
+    const usePhotoBtn = document.getElementById('usePhotoBtn');
+
+    modal.classList.remove('hidden');
+
+    // Reset UI
+    video.classList.remove('hidden');
+    canvas.classList.add('hidden');
+    captureBtn.classList.remove('hidden');
+    retakeBtn.classList.add('hidden');
+    usePhotoBtn.classList.add('hidden');
+
+    try {
+        // Request camera access with back camera preference on mobile
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: { 
+                facingMode: 'environment', // Use back camera on mobile
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            },
+            audio: false
+        });
+
+        video.srcObject = cameraStream;
+        await video.play();
+    } catch (err) {
+        console.error('Camera error:', err);
+        alert('Could not access your camera. Please check permissions or use "Upload from Files" instead.');
+        closeCameraModal();
+    }
+}
+
+// Capture photo
+function capturePhoto() {
+    const video = document.getElementById('cameraStream');
+    const canvas = document.getElementById('photoCanvas');
+    const captureBtn = document.getElementById('captureBtn');
+    const retakeBtn = document.getElementById('retakeBtn');
+    const usePhotoBtn = document.getElementById('usePhotoBtn');
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+
+    canvas.toBlob((blob) => {
+        capturedPhotoBlob = blob;
+        console.log('Photo captured:', (blob.size / 1024).toFixed(2) + 'KB');
+    }, 'image/jpeg', 0.95);
+
+    // Switch UI
+    video.classList.add('hidden');
+    canvas.classList.remove('hidden');
+    captureBtn.classList.add('hidden');
+    retakeBtn.classList.remove('hidden');
+    usePhotoBtn.classList.remove('hidden');
+}
+
+// Retake photo
+function retakePhoto() {
+    const video = document.getElementById('cameraStream');
+    const canvas = document.getElementById('photoCanvas');
+    const captureBtn = document.getElementById('captureBtn');
+    const retakeBtn = document.getElementById('retakeBtn');
+    const usePhotoBtn = document.getElementById('usePhotoBtn');
+
+    video.classList.remove('hidden');
+    canvas.classList.add('hidden');
+    captureBtn.classList.remove('hidden');
+    retakeBtn.classList.add('hidden');
+    usePhotoBtn.classList.add('hidden');
+
+    capturedPhotoBlob = null;
+}
+
+// Use captured photo
+function usePhoto() {
+    if (!capturedPhotoBlob) {
+        alert('No photo captured.');
+        return;
+    }
+
+    const preview = document.getElementById('imagePreview');
+    const clearBtn = document.getElementById('clearPhotoBtn');
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        preview.src = e.target.result;
+        preview.classList.remove('hidden');
+        if (clearBtn) clearBtn.classList.remove('hidden');
+    };
+
+    reader.readAsDataURL(capturedPhotoBlob);
+    closeCameraModal();
+}
+
+// Close camera modal
+function closeCameraModal(event) {
+    const modal = document.getElementById('cameraModal');
+
+    // If clicked inside modal content, ignore
+    if (event && event.target !== modal) return;
+
+    if (cameraStream) {
+        cameraStream.getTracks().forEach((t) => t.stop());
+        cameraStream = null;
+    }
+
+    modal.classList.add('hidden');
+}

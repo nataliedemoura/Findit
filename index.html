@@ -15,6 +15,14 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+
+    <!-- EmailJS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script>
+    (function(){
+        emailjs.init("EZAFlGL_NXZeGMbLz");
+    })();
+</script>
 </head>
 <body>
     <header>
@@ -131,7 +139,7 @@
         <!-- Results Summary -->
         <div class="results-summary">
             <h2 class="section-title">
-                Found Items 
+                Items 
                 <span class="item-count-badge" id="itemCount">0</span>
             </h2>
             <p id="filterSummary" class="filter-summary"></p>
@@ -139,6 +147,72 @@
 
         <!-- Items Grid -->
         <div id="itemsContainer" class="items-grid"></div>
+    </div>
+
+    <!-- Schedule Pickup Model -->
+    <div id="scheduleModal" class="modal-overlay hidden" onclick="closeScheduleModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2 class="modal-title">Schedule Pickup</h2>
+            
+            <div id="selectedItemInfo" class="selected-item-info"></div>
+            
+            <div class="form-group">
+                <label class="form-label">Your Full Name</label>
+                <input type="text" id="scheduleName" class="form-input" placeholder="John Doe" />
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" id="scheduleEmail" class="form-input" placeholder="your.email@umb.edu" />
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <input type="tel" id="schedulePhone" class="form-input" placeholder="(617) 555-0123" />
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Student ID Number</label>
+                <input type="text" id="scheduleStudentId" class="form-input" placeholder="Enter your student ID" />
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Preferred Pickup Date</label>
+                <input type="date" id="scheduleDate" class="form-input" />
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Preferred Pickup Time</label>
+                <select id="scheduleTime" class="form-select">
+                    <option value="">Select a time slot</option>
+                    <option value="9:00 AM - 10:00 AM">9:00 AM - 10:00 AM</option>
+                    <option value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</option>
+                    <option value="11:00 AM - 12:00 PM">11:00 AM - 12:00 PM</option>
+                    <option value="12:00 PM - 1:00 PM">12:00 PM - 1:00 PM</option>
+                    <option value="1:00 PM - 2:00 PM">1:00 PM - 2:00 PM</option>
+                    <option value="2:00 PM - 3:00 PM">2:00 PM - 3:00 PM</option>
+                    <option value="3:00 PM - 4:00 PM">3:00 PM - 4:00 PM</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Additional Notes (Optional)</label>
+                <textarea id="scheduleNotes" class="form-textarea" rows="3" placeholder="Any additional information..."></textarea>
+            </div>
+
+            <div class="pickup-info-box">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; vertical-align: middle; margin-right: 0.5rem;">
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0 Z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                <strong>Pickup Location:</strong> Campus Center, Room 101
+            </div>
+
+            <div class="button-group">
+                <button class="secondary-btn" onclick="closeScheduleModal()">Cancel</button>
+                <button class="submit-btn" onclick="submitSchedule()">Schedule Pickup</button>
+            </div>
+        </div>
     </div>
 
     <footer>
