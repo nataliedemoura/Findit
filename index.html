@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FINDIT.UMB - Home</title>
+    <title>FINDIT.UMB - Lost & Found</title>
 
     <link rel="stylesheet" href="styles.css">
 
@@ -30,8 +30,8 @@
     </header>
 
     <section class="hero">
-        <h2>Your Most Reliable Lost and Found Partner</h2>
-        <p>Here at FINDIT.UMB, we offer the best service.</p>
+        <h2>Find Your Lost Items</h2>
+        <p>Search through recovered items at UMass Boston</p>
         
         <div class="search-container">
             <div class="search-box">
@@ -42,18 +42,104 @@
                 <input 
                     type="text" 
                     id="searchInput" 
-                    placeholder="Search by description, category, or location..."
-                    oninput="filterItems()"
+                    placeholder="Search by item name, description, category..." 
+                    oninput="applyFilters()"
                 />
             </div>
-            <p class="search-hint">Try searching: iPhone, keys, Campus Center, etc.</p>
+            <p class="search-hint">Try searching for "phone", "keys", "backpack", etc.</p>
         </div>
     </section>
 
-    <section class="main-content">
-        <h3 class="section-title">Recent Items (<span id="itemCount">0</span>)</h3>
+    <div class="main-content">
+        <!-- Filter Section -->
+        <div class="filter-section">
+            <h3 class="filter-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; vertical-align: middle; margin-right: 0.5rem;">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                </svg>
+                Filters
+            </h3>
+            
+            <div class="filters-grid">
+                <!-- Category Filter -->
+                <div class="filter-group">
+                    <label class="filter-label">Category</label>
+                    <select id="categoryFilter" class="filter-select" onchange="applyFilters()">
+                        <option value="">All Categories</option>
+                        <option value="Electronics">Electronics</option>
+                        <option value="Keys">Keys</option>
+                        <option value="Wallets/IDs">Wallets/IDs</option>
+                        <option value="Clothing">Clothing</option>
+                        <option value="Books">Books</option>
+                        <option value="Bags">Bags</option>
+                        <option value="Jewelry">Jewelry</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <!-- Location Filter -->
+                <div class="filter-group">
+                    <label class="filter-label">Location</label>
+                    <select id="locationFilter" class="filter-select" onchange="applyFilters()">
+                        <option value="">All Locations</option>
+                        <option value="Campus Center">Campus Center</option>
+                        <option value="Healey Library">Healey Library</option>
+                        <option value="Wheatley Hall">Wheatley Hall</option>
+                        <option value="McCormack Hall">McCormack Hall</option>
+                        <option value="Science Building">Science Building</option>
+                        <option value="University Hall">University Hall</option>
+                        <option value="Quinn Administration">Quinn Administration</option>
+                        <option value="Parking Garage">Parking Garage</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <!-- Date Range Filter -->
+                <div class="filter-group">
+                    <label class="filter-label">Date Range</label>
+                    <select id="dateFilter" class="filter-select" onchange="applyFilters()">
+                        <option value="">All Dates</option>
+                        <option value="today">Today</option>
+                        <option value="week">Past Week</option>
+                        <option value="month">Past Month</option>
+                        <option value="3months">Past 3 Months</option>
+                    </select>
+                </div>
+
+                <!-- Availability Filter -->
+                <div class="filter-group">
+                    <label class="filter-label">Availability</label>
+                    <select id="availabilityFilter" class="filter-select" onchange="applyFilters()">
+                        <option value="available">Available Only</option>
+                        <option value="all">Show All Items</option>
+                        <option value="claimed">Claimed Only</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Clear Filters Button -->
+            <button class="clear-filters-btn" onclick="clearAllFilters()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; vertical-align: middle; margin-right: 0.25rem;">
+                    <path d="M3 6h18"></path>
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                </svg>
+                Clear All Filters
+            </button>
+        </div>
+
+        <!-- Results Summary -->
+        <div class="results-summary">
+            <h2 class="section-title">
+                Found Items 
+                <span class="item-count-badge" id="itemCount">0</span>
+            </h2>
+            <p id="filterSummary" class="filter-summary"></p>
+        </div>
+
+        <!-- Items Grid -->
         <div id="itemsContainer" class="items-grid"></div>
-    </section>
+    </div>
 
     <footer>
         <p>&copy; 2025 FINDIT.UMB. Jobs well done.</p>

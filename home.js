@@ -16,7 +16,7 @@ function displayItems(itemsToDisplay) {
                     <path d="m3.3 7 8.7 5 8.7-5"></path>
                     <path d="M12 22V12"></path>
                 </svg>
-                <p>No items found matching your search.</p>
+                <p>No items found matching your filters.</p>
             </div>
         `;
         return;
@@ -26,7 +26,9 @@ function displayItems(itemsToDisplay) {
         <div class="item-card">
             ${item.image ? `<img src="${item.image}" class="item-image" alt="${item.title}">` : ''}
             <div class="item-header">
-                <span class="item-badge badge-found">FOUND</span>
+                <span class="item-badge ${item.claimed ? 'badge-claimed' : 'badge-found'}">
+                    ${item.claimed ? 'CLAIMED' : 'AVAILABLE'}
+                </span>
                 <span class="item-category">${item.category}</span>
             </div>
             
@@ -50,32 +52,180 @@ function displayItems(itemsToDisplay) {
                     </svg>
                     <span>${item.date}</span>
                 </div>
+                ${item.claimed ? `
+                    <div class="detail-row" style="color: #dc2626;">
+                        <svg class="detail-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <span>Claimed by ${item.claimedByName || 'Student'}</span>
+                    </div>
+                ` : ''}
             </div>
         </div>
     `).join('');
 }
 
-// Filter items based on search
-function filterItems() {
-    const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+// Parse date string (format: YYYY-MM-DD or MM/DD/YYYY)
+function parseItemDate(dateString) {
+    if (!dateString) return null;
     
-    if (!searchQuery) {
-        displayItems(items);
-        return;
+    // Try parsing as YYYY-MM-DD
+    let parts = dateString.split('-');
+    if (parts.length === 3) {
+        return new Date(parts[0], parts[1] - 1, parts[2]);
     }
     
-    const filtered = items.filter(item => 
-        item.title.toLowerCase().includes(searchQuery) ||
-        item.description.toLowerCase().includes(searchQuery) ||
-        item.category.toLowerCase().includes(searchQuery) ||
-        item.location.toLowerCase().includes(searchQuery)
-    );
+    // Try parsing as MM/DD/YYYY
+    parts = dateString.split('/');
+    if (parts.length === 3) {
+        return new Date(parts[2], parts[0] - 1, parts[1]);
+    }
+    
+    return null;
+}
+
+// Check if item date falls within date filter range
+function isWithinDateRange(itemDate, filterValue) {
+    if (!filterValue || !itemDate) return true;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const parsedDate = parseItemDate(itemDate);
+    if (!parsedDate) return true;
+    
+    parsedDate.setHours(0, 0, 0, 0);
+    
+    switch(filterValue) {
+        case 'today':
+            return parsedDate.getTime() === today.getTime();
+        
+        case 'week':
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return parsedDate >= weekAgo;
+        
+        case 'month':
+            const monthAgo = new Date(today);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            return parsedDate >= monthAgo;
+        
+        case '3months':
+            const threeMonthsAgo = new Date(today);
+            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+            return parsedDate >= threeMonthsAgo;
+        
+        default:
+            return true;
+    }
+}
+
+// Apply all filters
+function applyFilters() {
+    const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+    const categoryFilter = document.getElementById('categoryFilter').value;
+    const locationFilter = document.getElementById('locationFilter').value;
+    const dateFilter = document.getElementById('dateFilter').value;
+    const availabilityFilter = document.getElementById('availabilityFilter').value;
+    
+    let filtered = items.filter(item => {
+        // Search filter
+        const matchesSearch = !searchQuery || 
+            item.title.toLowerCase().includes(searchQuery) ||
+            item.description.toLowerCase().includes(searchQuery) ||
+            item.category.toLowerCase().includes(searchQuery) ||
+            item.location.toLowerCase().includes(searchQuery);
+        
+        // Category filter
+        const matchesCategory = !categoryFilter || item.category === categoryFilter;
+        
+        // Location filter
+        const matchesLocation = !locationFilter || item.location === locationFilter;
+        
+        // Date filter
+        const matchesDate = isWithinDateRange(item.date, dateFilter);
+        
+        // Availability filter
+        let matchesAvailability = true;
+        if (availabilityFilter === 'available') {
+            matchesAvailability = !item.claimed;
+        } else if (availabilityFilter === 'claimed') {
+            matchesAvailability = item.claimed === true;
+        }
+        
+        return matchesSearch && matchesCategory && matchesLocation && matchesDate && matchesAvailability;
+    });
+    
+    // Update filter summary
+    updateFilterSummary(searchQuery, categoryFilter, locationFilter, dateFilter, availabilityFilter, filtered.length);
     
     displayItems(filtered);
 }
 
+// Update filter summary text
+function updateFilterSummary(search, category, location, dateRange, availability, resultCount) {
+    const summaryEl = document.getElementById('filterSummary');
+    if (!summaryEl) return;
+    
+    const activeFilters = [];
+    
+    if (search) activeFilters.push(`Search: "${search}"`);
+    if (category) activeFilters.push(`Category: ${category}`);
+    if (location) activeFilters.push(`Location: ${location}`);
+    if (dateRange) {
+        const dateLabels = {
+            'today': 'Today',
+            'week': 'Past Week',
+            'month': 'Past Month',
+            '3months': 'Past 3 Months'
+        };
+        activeFilters.push(`Date: ${dateLabels[dateRange]}`);
+    }
+    if (availability === 'available') activeFilters.push('Available items only');
+    if (availability === 'claimed') activeFilters.push('Claimed items only');
+    
+    if (activeFilters.length === 0) {
+        summaryEl.textContent = `Showing all ${resultCount} items`;
+    } else {
+        summaryEl.textContent = `${resultCount} items found with filters: ${activeFilters.join(', ')}`;
+    }
+}
+
+// Clear all filters
+function clearAllFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('categoryFilter').value = '';
+    document.getElementById('locationFilter').value = '';
+    document.getElementById('dateFilter').value = '';
+    document.getElementById('availabilityFilter').value = 'available';
+    
+    applyFilters();
+}
+
 // Initialize home page
 window.onload = async function() {
-    await loadItemsFromFirestore();
-    displayItems(items);
+    try {
+        await loadItemsFromFirestore();
+        
+        // Set default availability filter to "available"
+        const availabilityFilter = document.getElementById('availabilityFilter');
+        if (availabilityFilter) {
+            availabilityFilter.value = 'all';
+        }
+        
+        applyFilters();
+    } catch (error) {
+        console.error('Error loading items:', error);
+        const container = document.getElementById('itemsContainer');
+        if (container) {
+            container.innerHTML = `
+                <div class="no-items" style="grid-column: 1 / -1;">
+                    <p style="color: #dc2626;">Failed to load items. Please refresh the page.</p>
+                </div>
+            `;
+        }
+    }
 };

@@ -9,12 +9,15 @@ function displayClaimList() {
     
     if (!container) return;
     
-    if (items.length === 0) {
+    // Filter out claimed items
+    const unclaimedItems = items.filter(item => !item.claimed);
+    
+    if (unclaimedItems.length === 0) {
         container.innerHTML = '<p style="text-align: center; color: #6b7280;">No items available to claim</p>';
         return;
     }
 
-    container.innerHTML = items.map(item => `
+    container.innerHTML = unclaimedItems.map(item => `
         <div class="claim-item" onclick="selectClaimItem('${item.id}')">
             ${item.image ? `<img src="${item.image}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 0.5rem; margin-bottom: 0.5rem;">` : ''}
             <h4 style="font-weight: 600; margin-bottom: 0.25rem;">${item.title}</h4>
@@ -32,7 +35,13 @@ function selectClaimItem(itemId) {
     // Add selection to clicked item
     event.target.closest('.claim-item').classList.add('selected');
     
-    selectedClaimItem = items.find(item => item.id === itemId);
+    selectedClaimItem = items.find(item => item.id === itemId || item.id == itemId);
+    
+    if (!selectedClaimItem) {
+        console.error('Item not found:', itemId);
+        alert('Error: Could not find selected item');
+        return;
+    }
     
     // Show claim modal
     document.getElementById('claimModal').classList.remove('hidden');
@@ -177,8 +186,14 @@ async function processClaim() {
             signature: signatureCanvas.toDataURL()
         });
 
-        // Delete item from Firestore
-        await db.collection('items').doc(selectedClaimItem.id).delete();
+        // Mark item as claimed instead of deleting
+        await db.collection('items').doc(selectedClaimItem.id).update({
+            claimed: true,
+            claimedBy: currentUser ? currentUser.uid : 'anonymous',
+            claimedByName: `${firstName} ${lastName}`,
+            claimedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            claimerId: idNumber
+        });
         
         alert(`Item claimed successfully!\n\nItem: ${selectedClaimItem.title}\nClaimed by: ${firstName} ${lastName}\nID: ${idNumber}`);
         
