@@ -308,6 +308,7 @@ function closeClaimModal(event) {
 }
 
 // Process claim with validation
+// Process claim with validation
 async function processClaim() {
     const firstName = document.getElementById('claimFirstName').value.trim();
     const lastName = document.getElementById('claimLastName').value.trim();
@@ -368,6 +369,7 @@ async function processClaim() {
             const storageRef = storage.ref(`signatures/${selectedClaimItem.id}_${Date.now()}.png`);
             const snapshot = await storageRef.put(blob);
             signatureUrl = await snapshot.ref.getDownloadURL();
+            console.log('Signature uploaded successfully:', signatureUrl);
         }
         
         // Update item in Firestore

@@ -1,18 +1,6 @@
-// Show login form
-function showLogin() {
-    document.getElementById('loginForm').classList.remove('hidden');
-    document.getElementById('signupForm').classList.add('hidden');
-}
-
-// Show signup form
-function showSignup() {
-    document.getElementById('loginForm').classList.add('hidden');
-    document.getElementById('signupForm').classList.remove('hidden');
-}
-
 // Handle login with Firebase Auth
 async function handleLogin() {
-    const email = document.getElementById('loginEmail').value;
+    const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
 
     if (!email || !password) {
@@ -20,14 +8,27 @@ async function handleLogin() {
         return;
     }
 
+    // Disable button to prevent double submission
+    const submitBtn = event.target;
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Logging in...';
+
     try {
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         currentUser = userCredential.user;
         
+        console.log('User logged in successfully:', currentUser.email);
+        
         // Load user profile from Firestore
-        const userDoc = await db.collection('users').doc(currentUser.uid).get();
-        if (userDoc.exists) {
-            console.log('User profile loaded:', userDoc.data().name);
+        try {
+            const userDoc = await db.collection('users').doc(currentUser.uid).get();
+            if (userDoc.exists) {
+                console.log('User profile loaded:', userDoc.data().name);
+            }
+        } catch (profileError) {
+            console.error('Error loading user profile:', profileError);
+            // Don't block login if profile load fails
         }
         
         // Clear form
@@ -36,46 +37,63 @@ async function handleLogin() {
         
         // Redirect to dashboard
         window.location.href = 'dashboard.html';
+        
     } catch (error) {
         console.error('Login error:', error);
-        alert('Invalid credentials: ' + error.message);
+        
+        let errorMessage = 'Login failed: ';
+        
+        switch (error.code) {
+            case 'auth/invalid-email':
+                errorMessage += 'Invalid email address format.';
+                break;
+            case 'auth/user-disabled':
+                errorMessage += 'This account has been disabled.';
+                break;
+            case 'auth/user-not-found':
+                errorMessage += 'No account found with this email.';
+                break;
+            case 'auth/wrong-password':
+                errorMessage += 'Incorrect password.';
+                break;
+            case 'auth/invalid-credential':
+                errorMessage += 'Invalid credentials. Please check your email and password.';
+                break;
+            case 'auth/too-many-requests':
+                errorMessage += 'Too many failed attempts. Please try again later.';
+                break;
+            default:
+                errorMessage += error.message;
+        }
+        
+        alert(errorMessage);
+        
+        // Re-enable button
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
     }
 }
 
-// Handle signup with Firebase Auth
-async function handleSignup() {
-    const name = document.getElementById('signupName').value;
-    const email = document.getElementById('signupEmail').value;
-    const password = document.getElementById('signupPassword').value;
-    const staffId = document.getElementById('signupStaffId').value;
-
-    if (!name || !email || !password || !staffId) {
-        alert('Please fill in all fields');
-        return;
-    }
-
-    try {
-        // Create Firebase Auth user
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-        
-        // Store additional user data in Firestore
-        await db.collection('users').doc(userCredential.user.uid).set({
-            name: name,
-            email: email,
-            staffId: staffId,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+// Handle Enter key press in form fields
+document.addEventListener('DOMContentLoaded', () => {
+    const emailInput = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+    
+    if (emailInput) {
+        emailInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('loginPassword').focus();
+            }
         });
-        
-        alert('Account created successfully! Please login.');
-        showLogin();
-        
-        // Clear form
-        document.getElementById('signupName').value = '';
-        document.getElementById('signupEmail').value = '';
-        document.getElementById('signupPassword').value = '';
-        document.getElementById('signupStaffId').value = '';
-    } catch (error) {
-        console.error('Signup error:', error);
-        alert('Signup failed: ' + error.message);
     }
-}
+    
+    if (passwordInput) {
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleLogin();
+            }
+        });
+    }
+});
