@@ -42,47 +42,28 @@
             <h2 class="modal-title">Verify Ownership</h2>
             
             <div class="form-group">
-                <label class="form-label">First Name</label>
-                <input type="text" id="claimFirstName" class="form-input" placeholder="Enter first name" />
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Last Name</label>
-                <input type="text" id="claimLastName" class="form-input" placeholder="Enter last name" />
+                <label class="form-label">Full Name</label>
+                <input type="text" id="claimFullName" class="form-input" placeholder="Enter student's full name" />
             </div>
 
             <div class="form-group">
-                <label class="form-label">Select ID Type</label>
-                <div class="radio-group">
-                    <label>
-                        <input type="radio" name="idType" value="license" checked onchange="switchIdType()" />
-                        Driver's License / State ID
-                    </label>
-                    <label>
-                        <input type="radio" name="idType" value="student" onchange="switchIdType()" />
-                        Student ID
-                    </label>
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label" id="idLabel">Driver's License / State ID Number</label>
+                <label class="form-label">Student ID Number</label>
                 <input 
                     type="text" 
-                    id="claimIdNumber" 
+                    id="claimStudentId" 
                     class="form-input" 
-                    placeholder="Enter ID number" 
-                    oninput="validateIdNumber()"
+                    placeholder="Enter student ID number" 
+                    oninput="validateStudentId()"
                 />
                 <p id="idValidationMessage" style="display: none; color: #dc2626; font-size: 0.875rem; margin-top: 0.5rem;">
-                    Invalid ID number
+                    Please enter a valid student ID number
                 </p>
             </div>
             
             <div class="form-group">
                 <label class="form-label">Digital Signature</label>
                 <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.5rem;">
-                    Sign below to claim this item
+                    Sign below to confirm item pickup
                 </p>
                 <canvas id="signaturePad" class="signature-pad" width="400" height="200"></canvas>
                 <button class="link-btn" onclick="clearSignature()" style="margin-top: 0.5rem;">
@@ -92,7 +73,7 @@
 
             <div class="button-group">
                 <button class="secondary-btn" onclick="closeClaimModal()">Cancel</button>
-                <button class="submit-btn" onclick="processClaim()">Claim Item</button>
+                <button class="submit-btn" onclick="processClaim()">Sign Out Item</button>
             </div>
         </div>
     </div>

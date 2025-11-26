@@ -114,44 +114,17 @@ function getSignatureDataURL() {
     return canvas.toDataURL('image/png');
 }
 
-// Switch ID type
-function switchIdType() {
-    const idType = document.querySelector('input[name="idType"]:checked').value;
-    const idLabel = document.getElementById('idLabel');
-    const idInput = document.getElementById('claimIdNumber');
-    
-    if (idType === 'license') {
-        idLabel.textContent = "Driver's License / State ID Number";
-        idInput.placeholder = "Enter license/ID number";
-    } else {
-        idLabel.textContent = "Student ID Number";
-        idInput.placeholder = "Enter student ID number";
-    }
-    
-    // Clear validation message
-    const validationMsg = document.getElementById('idValidationMessage');
-    if (validationMsg) validationMsg.style.display = 'none';
-}
-
-// Validate ID number
-function validateIdNumber() {
-    const idNumber = document.getElementById('claimIdNumber').value.trim();
-    const idType = document.querySelector('input[name="idType"]:checked').value;
+// Validate student ID
+function validateStudentId() {
+    const studentId = document.getElementById('claimStudentId').value.trim();
     const validationMsg = document.getElementById('idValidationMessage');
     
     if (!validationMsg) return true;
     
-    let isValid = false;
+    // Student ID validation: at least 5 characters (adjust as needed)
+    const isValid = studentId.length >= 5;
     
-    if (idType === 'license') {
-        // Basic validation: at least 5 characters
-        isValid = idNumber.length >= 5;
-    } else {
-        // Student ID: typically numeric, at least 5 digits
-        isValid = /^\d{5,}$/.test(idNumber);
-    }
-    
-    if (idNumber.length > 0 && !isValid) {
+    if (studentId.length > 0 && !isValid) {
         validationMsg.style.display = 'block';
     } else {
         validationMsg.style.display = 'none';
@@ -170,7 +143,7 @@ async function loadClaimItems() {
 
     try {
         // Show loading state
-        container.innerHTML = '<div style="text-align: center; padding: 2rem;">Loading items...</div>';
+        container.innerHTML = '<div style="text-align: center; padding: 2rem; color: #6b7280;">Loading items...</div>';
 
         // Query items - get all first, then filter
         const snapshot = await db.collection('items').orderBy('date', 'desc').get();
@@ -182,7 +155,7 @@ async function loadClaimItems() {
             }))
             .filter(item => !item.claimed); // Filter unclaimed items
 
-        console.log('Loaded items:', availableItems.length);
+        console.log('Loaded available items:', availableItems.length);
 
         if (availableItems.length === 0) {
             container.innerHTML = `
@@ -263,15 +236,13 @@ async function openClaimModal(itemId) {
         }
         
         // Clear form
-        document.getElementById('claimFirstName').value = '';
-        document.getElementById('claimLastName').value = '';
-        document.getElementById('claimIdNumber').value = '';
+        document.getElementById('claimFullName').value = '';
+        document.getElementById('claimStudentId').value = '';
         clearSignature();
         
-        // Reset ID type to license
-        const licenseRadio = document.querySelector('input[name="idType"][value="license"]');
-        if (licenseRadio) licenseRadio.checked = true;
-        switchIdType();
+        // Clear validation message
+        const validationMsg = document.getElementById('idValidationMessage');
+        if (validationMsg) validationMsg.style.display = 'none';
         
         // Show modal
         document.getElementById('claimModal').classList.remove('hidden');
@@ -296,9 +267,8 @@ function closeClaimModal(event) {
         selectedClaimItem = null;
         
         // Clear form
-        document.getElementById('claimFirstName').value = '';
-        document.getElementById('claimLastName').value = '';
-        document.getElementById('claimIdNumber').value = '';
+        document.getElementById('claimFullName').value = '';
+        document.getElementById('claimStudentId').value = '';
         clearSignature();
         
         // Clear validation messages
@@ -308,34 +278,25 @@ function closeClaimModal(event) {
 }
 
 // Process claim with validation
-// Process claim with validation
 async function processClaim() {
-    const firstName = document.getElementById('claimFirstName').value.trim();
-    const lastName = document.getElementById('claimLastName').value.trim();
-    const idNumber = document.getElementById('claimIdNumber').value.trim();
-    const idType = document.querySelector('input[name="idType"]:checked').value;
+    const fullName = document.getElementById('claimFullName').value.trim();
+    const studentId = document.getElementById('claimStudentId').value.trim();
     
     // Validation
-    if (!firstName || firstName.length < 2) {
-        alert('Please enter a valid first name');
-        document.getElementById('claimFirstName').focus();
+    if (!fullName || fullName.length < 2) {
+        alert('Please enter the student\'s full name');
+        document.getElementById('claimFullName').focus();
         return;
     }
     
-    if (!lastName || lastName.length < 2) {
-        alert('Please enter a valid last name');
-        document.getElementById('claimLastName').focus();
-        return;
-    }
-    
-    if (!idNumber || !validateIdNumber()) {
-        alert('Please enter a valid ID number');
-        document.getElementById('claimIdNumber').focus();
+    if (!studentId || !validateStudentId()) {
+        alert('Please enter a valid student ID number (at least 5 characters)');
+        document.getElementById('claimStudentId').focus();
         return;
     }
     
     if (!hasSignature()) {
-        alert('Please provide your signature');
+        alert('Please provide a signature');
         return;
     }
     
@@ -345,8 +306,7 @@ async function processClaim() {
     }
     
     // Confirm before processing
-    const fullName = `${firstName} ${lastName}`;
-    const confirmMsg = `Confirm item claim:\n\nItem: ${selectedClaimItem.title}\nClaimant: ${fullName}\nID: ${idNumber}\n\nIs this correct?`;
+    const confirmMsg = `Confirm item sign out:\n\nItem: ${selectedClaimItem.title}\nStudent: ${fullName}\nStudent ID: ${studentId}\n\nIs this correct?`;
     
     if (!confirm(confirmMsg)) {
         return;
@@ -365,11 +325,17 @@ async function processClaim() {
         // Upload signature to Firebase Storage
         let signatureUrl = null;
         if (signatureDataURL) {
-            const blob = await fetch(signatureDataURL).then(r => r.blob());
-            const storageRef = storage.ref(`signatures/${selectedClaimItem.id}_${Date.now()}.png`);
-            const snapshot = await storageRef.put(blob);
-            signatureUrl = await snapshot.ref.getDownloadURL();
-            console.log('Signature uploaded successfully:', signatureUrl);
+            try {
+                const blob = await fetch(signatureDataURL).then(r => r.blob());
+                const storageRef = storage.ref(`signatures/${selectedClaimItem.id}_${Date.now()}.png`);
+                const snapshot = await storageRef.put(blob);
+                signatureUrl = await snapshot.ref.getDownloadURL();
+                console.log('Signature uploaded successfully:', signatureUrl);
+            } catch (storageError) {
+                console.error('Failed to upload signature:', storageError);
+                // Continue without signature URL if storage fails
+                signatureUrl = null;
+            }
         }
         
         // Update item in Firestore
@@ -377,15 +343,12 @@ async function processClaim() {
             claimed: true,
             claimedAt: firebase.firestore.FieldValue.serverTimestamp(),
             claimedByName: fullName,
-            claimedByFirstName: firstName,
-            claimedByLastName: lastName,
-            claimedByIdType: idType,
-            claimedByIdNumber: idNumber,
+            claimedByStudentId: studentId,
             claimedBySignature: signatureUrl,
             claimedByStaff: currentUser ? currentUser.uid : 'unknown'
         });
         
-        alert(`Item successfully signed out to ${fullName}`);
+        alert(`Item successfully signed out to ${fullName}\nStudent ID: ${studentId}`);
         
         // Close modal and refresh list
         closeClaimModal();
