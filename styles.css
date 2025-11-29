@@ -1129,3 +1129,34 @@ footer {
     margin-right: 0.5rem;
     color: #f59e0b;
 }
+
+/* ===== LOGO STYLES ===== */
+.header-logo {
+    height: 50px; /* Adjust based on your logo size */
+    width: auto;
+    display: block;
+    transition: transform 0.3s;
+}
+
+.header-logo:hover {
+    transform: scale(1.05);
+}
+
+/* Make logo responsive on mobile */
+@media (max-width: 768px) {
+    .header-logo {
+        height: 40px;
+    }
+}
+
+/* Optional: If you want both logo and text */
+.header-branding {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    cursor: pointer;
+}
+
+.header-branding:hover .header-logo {
+    transform: scale(1.05);
+}
